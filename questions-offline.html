@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>给你的几个问题</title>
+<style>
+/* Layout: one frosted panel over a dusk sky with petals drifting down; a shuttlecock flies along the top as progress. */
+:root {
+  --night: #1E0C26;
+  --panel: rgba(31, 11, 38, 0.8);
+  --ring: #34123C;
+  --field: rgba(255, 232, 240, 0.08);
+  --hair: rgba(255, 220, 232, 0.24);
+  --line-strong: rgba(255, 225, 236, 0.36);
+  --paper: #FCF2F5;
+  --muted: #DDBFCC;
+  --rose: #FF6B81;
+  --rose-soft: rgba(255, 107, 129, 0.18);
+  --on-rose: #2B0B12;
+  --display: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun", Georgia, serif;
+  --body: system-ui, -apple-system, "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--night);
+  color: var(--paper);
+  font: 400 1rem/1.55 var(--body);
+  padding-block: 20px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  box-sizing: border-box;
+}
+*, *::before, *::after { box-sizing: border-box; }
+
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 45% at 88% 6%, rgba(255, 140, 150, 0.42), transparent 70%),
+    radial-gradient(70% 50% at 8% 96%, rgba(222, 92, 146, 0.38), transparent 72%),
+    radial-gradient(55% 42% at 50% 52%, rgba(128, 42, 108, 0.4), transparent 75%),
+    linear-gradient(170deg, #3E1239 0%, #2B0F34 48%, #1E0C26 100%);
+}
+.sky::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle 46px at 18% 22%, rgba(255, 190, 200, 0.24), transparent 70%),
+    radial-gradient(circle 72px at 80% 34%, rgba(255, 170, 190, 0.17), transparent 70%),
+    radial-gradient(circle 34px at 62% 80%, rgba(255, 210, 200, 0.22), transparent 70%),
+    radial-gradient(circle 58px at 10% 68%, rgba(255, 160, 190, 0.15), transparent 70%),
+    radial-gradient(circle 28px at 90% 86%, rgba(255, 220, 210, 0.22), transparent 70%),
+    radial-gradient(circle 40px at 38% 9%, rgba(255, 200, 210, 0.18), transparent 70%);
+}
+#petals { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+.stage {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+}
+
+.bar { display: flex; align-items: center; gap: 14px; }
+.track { position: relative; flex: 1; min-width: 0; height: 28px; }
+.rail { position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: var(--hair); }
+.trail { position: absolute; left: 0; top: 50%; height: 2px; margin-top: -1px; width: calc(var(--p, 0) * (100% - 32px)); background: var(--rose); transition: width 0.6s ease; }
+.shuttle { position: absolute; top: 4px; left: calc(32px + var(--p, 0) * (100% - 32px)); transform: translateX(-100%); width: 32px; height: 20px; transition: left 0.6s ease; }
+.shuttle svg { display: block; }
+
+.langs { display: flex; border: 1px solid var(--line-strong); border-radius: 6px; overflow: hidden; flex: none; }
+.langs button {
+  font: 600 0.8125rem/1 var(--body);
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  padding: 9px 11px;
+  min-height: 34px;
+  cursor: pointer;
+}
+.langs button[aria-pressed="true"] { background: var(--paper); color: var(--night); }
+
+.panel {
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 28px 22px 24px;
+}
+.step { animation: rise 0.3s ease both; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.eyebrow { margin: 0 0 10px; font: 700 0.75rem/1.2 var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--rose); }
+h1 { margin: 0; font: 600 clamp(1.9rem, 7.4vw, 2.5rem)/1.08 var(--display); text-wrap: balance; letter-spacing: -0.005em; }
+h1:focus { outline: none; }
+.sub { margin: 12px 0 0; color: var(--muted); }
+
+.opts { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 16px;
+  text-align: left;
+  font: 600 1rem/1.35 var(--body);
+  color: var(--paper);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.opt:hover { border-color: var(--paper); }
+.opt .dot { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--line-strong); transition: background 0.15s ease, border-color 0.15s ease; }
+.opt.on { border-color: var(--rose); background: var(--rose-soft); }
+.opt.on .dot { border-color: var(--rose); background: var(--rose); box-shadow: inset 0 0 0 3px var(--ring); }
+
+label.fl { display: block; margin: 24px 0 8px; font: 600 0.875rem/1.3 var(--body); color: var(--muted); }
+textarea {
+  display: block;
+  width: 100%;
+  min-height: 112px;
+  resize: vertical;
+  padding: 12px 14px;
+  font: 400 1rem/1.5 var(--body);
+  color: var(--paper);
+  background: var(--field);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+}
+textarea::placeholder { color: var(--muted); opacity: 0.8; }
+textarea:focus { outline: none; border-color: var(--rose); }
+.opts + label.fl { margin-top: 22px; }
+h1 + textarea, .sub + textarea { margin-top: 24px; }
+
+.nav { display: flex; align-items: center; gap: 12px; margin-top: 26px; }
+.btn {
+  font: 700 1rem/1.2 var(--body);
+  min-height: 52px;
+  padding: 14px 20px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.btn.primary { flex: 1; background: var(--rose); color: var(--on-rose); }
+.btn.primary:disabled { background: transparent; color: var(--muted); border-color: var(--line-strong); cursor: default; }
+.btn.ghost { background: transparent; color: var(--muted); padding-inline: 8px; font-weight: 600; }
+.btn.ghost:hover { color: var(--paper); }
+.btn.line { background: transparent; color: var(--paper); border-color: var(--line-strong); }
+
+.langs button:focus-visible, .opt:focus-visible, .btn:focus-visible, a:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
+
+.copybox { margin-top: 20px; }
+.copybox textarea { min-height: 170px; font-size: 0.9375rem; }
+.copybox .btn { margin-top: 12px; width: 100%; }
+.hint { margin: 10px 0 0; font-size: 0.875rem; color: var(--muted); }
+
+.ownerlink { align-self: center; font-size: 0.875rem; color: var(--muted); }
+.ownerlink:hover { color: var(--paper); }
+
+.replies { display: flex; flex-direction: column; gap: 14px; margin-top: 22px; }
+.reply { border: 1px solid var(--line-strong); border-radius: 6px; padding: 14px 16px; }
+.reply header { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; margin-bottom: 10px; }
+.reply time { font: 600 0.8125rem/1.3 var(--body); color: var(--muted); }
+.tag { font: 700 0.6875rem/1 var(--body); letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 7px; border-radius: 4px; border: 1px solid var(--line-strong); color: var(--muted); }
+.tag.hot { color: var(--on-rose); background: var(--rose); border-color: var(--rose); }
+.reply dl { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.reply dt { font: 600 0.8125rem/1.3 var(--body); color: var(--muted); }
+.reply dd { margin: 2px 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.reply dd.final { font: 600 1.375rem/1.2 var(--display); color: var(--rose); }
+
+@media (prefers-reduced-motion: reduce) {
+  .step { animation: none; }
+  .trail, .shuttle, .opt, .opt .dot { transition: none; }
+}
+</style>
+</head><body>
+
+<div class="sky" aria-hidden="true"></div>
+<canvas id="petals" aria-hidden="true"></canvas>
+
+<main class="stage">
+  <div class="bar" id="bar">
+    <div class="track" aria-hidden="true">
+      <span class="rail"></span>
+      <span class="trail" id="trail"></span>
+      <span class="shuttle" id="shuttle">
+        <svg viewBox="0 0 32 20" width="32" height="20">
+          <path d="M23 10 L3 2 Q1 10 3 18 Z" fill="#FCF2F5"/>
+          <path d="M23 10 L3 6 M23 10 L3 10 M23 10 L3 14" stroke="#2B0F34" stroke-width="0.9" fill="none"/>
+          <circle cx="27" cy="10" r="4" fill="#FF6B81"/>
+        </svg>
+      </span>
+    </div>
+    <div class="langs" role="group" aria-label="Language / 语言">
+      <button type="button" id="lang-ru" aria-pressed="true">Рус</button>
+      <button type="button" id="lang-zh" aria-pressed="false">中文</button>
+    </div>
+  </div>
+
+  <section class="panel" id="card" aria-live="polite"></section>
+  <section class="panel" id="ownerView" hidden></section>
+
+  <a class="ownerlink" id="ownerLink" href="#answers" hidden>Ответы</a>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var QS = [
+    { id: 'mood', type: 'choice', lbl: 'Настроение',
+      t: { ru: 'Как у тебя сегодня настроение?', zh: '你今天心情怎么样？' },
+      o: [
+        { k: 'great', ru: 'Отличное', zh: '很好' },
+        { k: 'calm', ru: 'Спокойное', zh: '平静' },
+        { k: 'tired', ru: 'Немного уставшее', zh: '有点累' },
+        { k: 'hug', ru: 'Хочу обнимашек', zh: '想要抱抱' }
+      ] },
+    { id: 'evening', type: 'choice', lbl: 'Идеальный вечер',
+      t: { ru: 'Какой вечер тебе нравится больше?', zh: '你更喜欢怎样的夜晚？' },
+      o: [
+        { k: 'home', ru: 'Тихий вечер дома вдвоём', zh: '两个人安静地待在家里' },
+        { k: 'walk', ru: 'Прогулка по городу', zh: '在城市里散步' },
+        { k: 'food', ru: 'Поесть что-нибудь вкусное', zh: '一起吃点好吃的' },
+        { k: 'active', ru: 'Что-нибудь активное', zh: '来点运动或活动' }
+      ] },
+    { id: 'badminton', type: 'choice', lbl: 'Бадминтон, кто выиграет',
+      t: { ru: 'Бадминтон: кто победит в нашем матче?', zh: '羽毛球：我们比赛的话谁会赢？' },
+      o: [
+        { k: 'her', ru: 'Я выиграю', zh: '我会赢' },
+        { k: 'him', ru: 'Ты выиграешь', zh: '你会赢' },
+        { k: 'court', ru: 'Решим на корте', zh: '球场上见分晓' }
+      ] },
+    { id: 'together', type: 'text', lbl: 'Что хочу сделать вместе',
+      t: { ru: 'Что бы ты хотела сделать вместе в ближайшее время?', zh: '最近你想和我一起做什么？' } },
+    { id: 'fav', type: 'text', lbl: 'Что нравится во мне больше всего',
+      t: { ru: 'Что тебе во мне нравится больше всего?', zh: '你最喜欢我哪一点？' } },
+    { id: 'future', type: 'choice', lbl: 'Видишь ли наше совместное будущее',
+      t: { ru: 'Ты видишь наше совместное будущее?', zh: '你能想象我们共同的未来吗？' },
+      o: [
+        { k: 'yes', ru: 'Да, вижу', zh: '是的，我能想象' },
+        { k: 'maybe', ru: 'Я об этом думаю', zh: '我正在想这件事' },
+        { k: 'unsure', ru: 'Пока не знаю', zh: '现在还不确定' }
+      ] },
+    { id: 'final', type: 'final', lbl: 'Будешь со мной встречаться?',
+      t: { ru: 'Будешь со мной встречаться?', zh: '你愿意和我交往吗？' },
+      sub: { ru: 'Любой честный ответ хорош.', zh: '任何真实的回答都很好。' },
+      o: [
+        { k: 'yes', ru: 'Да', zh: '愿意' },
+        { k: 'think', ru: 'Мне нужно немного времени', zh: '我需要一点时间' },
+        { k: 'no', ru: 'Нет', zh: '不愿意' }
+      ] }
+  ];
+
+  var TXT = {
+    ru: {
+      introTitle: 'У меня к тебе несколько вопросов',
+      introSub: 'Это займёт минуту. Отвечай как есть.',
+      start: 'Начать', next: 'Дальше', back: 'Назад', send: 'Отправить ответ',
+      qOf: function (i, n) { return 'Вопрос ' + i + ' из ' + n; },
+      textPh: 'Напиши что угодно',
+      noteLbl: 'Хочешь что-то добавить?', notePh: 'Можно ничего не писать',
+      copy: 'Скопировать', copied: 'Скопировано',
+      hint: 'Не удалось скопировать. Выдели текст и скопируй вручную.',
+      saved: 'Твои ответы сохранены.',
+      fail: 'Автоматически отправить не получилось. Скопируй текст ниже и отправь мне в чате.',
+      done: {
+        yes: 'Спасибо тебе. Мне очень приятно.',
+        think: 'Спасибо за честный ответ. Я подожду.',
+        no: 'Спасибо, что ответила честно. Это важно для меня.'
+      }
+    },
+    zh: {
+      introTitle: '我有几个问题想问你',
+      introSub: '只需要一分钟。照实回答就好。',
+      start: '开始', next: '下一题', back: '上一题', send: '发送回答',
+      qOf: function (i, n) { return '第 ' + i + ' 题，共 ' + n + ' 题'; },
+      textPh: '想写什么都可以',
+      noteLbl: '想补充点什么吗？', notePh: '也可以什么都不写',
+      copy: '复制', copied: '已复制',
+      hint: '复制没有成功。请选中文字后手动复制。',
+      saved: '你的回答已保存。',
+      fail: '没能自动发送。请复制下面的文字，在聊天里发给我。',
+      done: {
+        yes: '谢谢你，我很开心。',
+        think: '谢谢你的坦诚。我会等你。',
+        no: '谢谢你说实话，这对我很重要。'
+      }
+    }
+  };
+
+  var S = {
+    lang: 'zh',
+    step: -1,
+    a: {},
+    text: '',
+    note: '',
+    done: false,
+    saved: false,
+    started: Date.now()
+  };
+  var db = null, owner = false, rendered = false;
+  var rid = null;
+  try { rid = localStorage.getItem('rid'); } catch (e) {}
+  if (!rid) {
+    rid = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    try { localStorage.setItem('rid', rid); } catch (e) {}
+  }
+
+  function T() { return TXT[S.lang]; }
+  function $(id) { return document.getElementById(id); }
+  function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+
+  function el(tag, props, kids) {
+    var n = document.createElement(tag);
+    if (props) {
+      Object.keys(props).forEach(function (k) {
+        var v = props[k];
+        if (k === 'class') n.className = v;
+        else if (k === 'text') n.textContent = v;
+        else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), v);
+        else if (v === true) n.setAttribute(k, '');
+        else if (v !== false && v != null) n.setAttribute(k, v);
+      });
+    }
+    (kids || []).forEach(function (c) {
+      if (c == null) return;
+      n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    });
+    return n;
+  }
+
+  /* ---------- saving ---------- */
+  var queue = Promise.resolve();
+  function payload() {
+    return {
+      a: S.a, text: S.a.together || '', note: S.note, final: S.a.final || null,
+      done: S.done, lang: S.lang, who: owner ? 'owner' : 'visitor',
+      startedAt: S.started, updatedAt: Date.now()
+    };
+  }
+  function save() {
+    if (!db) { S.saved = false; return queue; }
+    queue = queue.then(function () {
+      return db.doc('replies/' + rid).set(payload());
+    }).then(function () { S.saved = true; }, function () { S.saved = false; });
+    return queue;
+  }
+  function withTimeout(p, ms) {
+    return Promise.race([p, new Promise(function (r) { setTimeout(r, ms); })]);
+  }
+
+  /* ---------- summary (always Russian, for the sender) ---------- */
+  function optRu(q, k) {
+    for (var i = 0; i < q.o.length; i++) if (q.o[i].k === k) return q.o[i].ru;
+    return '';
+  }
+  function summary(r) {
+    var a = (r && r.a) || {};
+    var lines = ['Мои ответы:'];
+    QS.forEach(function (q) {
+      if (q.type === 'text') {
+        var tv = a[q.id] || (q.id === 'together' ? r.text : '');
+        lines.push(q.lbl + ': ' + (tv ? tv : '—'));
+      } else if (a[q.id]) {
+        lines.push(q.lbl + ': ' + optRu(q, String(a[q.id])));
+      }
+    });
+    if (r.note) lines.push('Комментарий: ' + r.note);
+    return lines.join('\n');
+  }
+
+  /* ---------- progress ---------- */
+  function setProgress() {
+    var n = QS.length;
+    var p = S.step < 0 ? 0 : Math.min(1, S.step / n);
+    $('bar').style.setProperty('--p', String(p));
+  }
+
+  /* ---------- views ---------- */
+  function introView() {
+    var t = T();
+    return el('div', { class: 'step' }, [
+      el('h1', { tabindex: '-1', text: t.introTitle }),
+      el('p', { class: 'sub', text: t.introSub }),
+      el('div', { class: 'nav' }, [
+        el('button', { class: 'btn primary', type: 'button', text: t.start, onclick: function () { S.step = 0; render(true); } })
+      ])
+    ]);
+  }
+
+  function pick(q, k, group, next) {
+    S.a[q.id] = k;
+    Array.prototype.forEach.call(group.children, function (b) {
+      var on = b.getAttribute('data-k') === k;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    next.disabled = false;
+  }
+
+  function questionView(i) {
+    var q = QS[i], n = QS.length, t = T();
+    var wrap = el('div', { class: 'step' });
+    wrap.appendChild(el('p', { class: 'eyebrow', text: t.qOf(i + 1, n) }));
+    wrap.appendChild(el('h1', { tabindex: '-1', text: q.t[S.lang] }));
+    if (q.sub) wrap.appendChild(el('p', { class: 'sub', text: q.sub[S.lang] }));
+
+    var isLast = i === n - 1;
+    var next = el('button', { class: 'btn primary', type: 'button', id: 'next', text: isLast ? t.send : t.next, onclick: advance });
+
+    if (q.type === 'choice' || q.type === 'final') {
+      var group = el('div', { class: 'opts', role: 'radiogroup', 'aria-label': q.t[S.lang] });
+      q.o.forEach(function (o) {
+        var on = S.a[q.id] === o.k;
+        var b = el('button', {
+          class: 'opt' + (on ? ' on' : ''), type: 'button', role: 'radio',
+          'aria-checked': on ? 'true' : 'false', 'data-k': o.k,
+          onclick: function () { pick(q, o.k, group, next); }
+        }, [el('span', { class: 'dot', 'aria-hidden': 'true' }), el('span', { text: o[S.lang] })]);
+        group.appendChild(b);
+      });
+      wrap.appendChild(group);
+      next.disabled = !S.a[q.id];
+    }
+
+    if (q.type === 'text') {
+      var ta = el('textarea', { id: 'ans-text', 'aria-label': q.t[S.lang], placeholder: t.textPh, oninput: function (e) { S.a[q.id] = e.target.value; } });
+      ta.value = S.a[q.id] || '';
+      wrap.appendChild(ta);
+    }
+
+    if (q.type === 'final') {
+      wrap.appendChild(el('label', { class: 'fl', for: 'ans-note', text: t.noteLbl }));
+      var note = el('textarea', { id: 'ans-note', placeholder: t.notePh, oninput: function (e) { S.note = e.target.value; } });
+      note.value = S.note;
+      wrap.appendChild(note);
+    }
+
+    var nav = el('div', { class: 'nav' });
+    if (i > 0) nav.appendChild(el('button', { class: 'btn ghost', type: 'button', text: t.back, onclick: function () { S.step--; render(true); } }));
+    nav.appendChild(next);
+    wrap.appendChild(nav);
+    return wrap;
+  }
+
+  function copyText(text, btn, ta) {
+    var t = T();
+    function manual() {
+      ta.focus(); ta.select();
+      try { ta.setSelectionRange(0, text.length); } catch (e) {}
+      try { if (document.execCommand && document.execCommand('copy')) { btn.textContent = t.copied; return; } } catch (e) {}
+      var h = $('copyhint'); if (h) h.hidden = false;
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { btn.textContent = t.copied; }, manual);
+        return;
+      }
+    } catch (e) {}
+    manual();
+  }
+
+  function doneView() {
+    var t = T();
+    var fin = S.a.final;
+    var wrap = el('div', { class: 'step' });
+    wrap.appendChild(el('h1', { tabindex: '-1', text: t.done[fin] || t.done.think }));
+    if (S.saved) {
+      wrap.appendChild(el('p', { class: 'sub', text: t.saved }));
+    } else {
+      wrap.appendChild(el('p', { class: 'sub', text: t.fail }));
+      var text = summary(payload());
+      var ta = el('textarea', { id: 'summary', readonly: true, 'aria-label': 'Ответы' });
+      ta.value = text;
+      var btn = el('button', { class: 'btn primary', type: 'button', text: t.copy });
+      btn.addEventListener('click', function () { copyText(text, btn, ta); });
+      wrap.appendChild(el('div', { class: 'copybox' }, [ta, btn, el('p', { class: 'hint', id: 'copyhint', hidden: true, text: t.hint })]));
+    }
+    return wrap;
+  }
+
+  function advance() {
+    var q = QS[S.step];
+    if (q.type === 'final') { submit(); return; }
+    S.step++;
+    save();
+    render(true);
+  }
+
+  function submit() {
+    var btn = $('next');
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    S.done = true;
+    S.step = QS.length - 1;
+    setProgress();
+    $('bar').style.setProperty('--p', '1');
+    withTimeout(save(), 8000).then(function () {
+      S.step = QS.length;
+      render(true);
+    });
+  }
+
+  function render(focus) {
+    var card = $('card');
+    clear(card);
+    document.documentElement.setAttribute('lang', S.lang === 'zh' ? 'zh-CN' : 'ru');
+    card.setAttribute('lang', S.lang === 'zh' ? 'zh-CN' : 'ru');
+    $('lang-ru').setAttribute('aria-pressed', S.lang === 'ru' ? 'true' : 'false');
+    $('lang-zh').setAttribute('aria-pressed', S.lang === 'zh' ? 'true' : 'false');
+    if (S.step >= QS.length) $('bar').style.setProperty('--p', '1'); else setProgress();
+    var view = S.step < 0 ? introView() : (S.step >= QS.length ? doneView() : questionView(S.step));
+    card.appendChild(view);
+    if (focus && rendered) {
+      var h = card.querySelector('h1');
+      if (h) h.focus();
+    }
+    rendered = true;
+  }
+
+  /* ---------- owner view: #answers ---------- */
+  var replies = null, unsub = null, subFailed = false;
+
+  function subscribeReplies() {
+    if (unsub || !db) return;
+    try {
+      unsub = db.collection('replies').orderBy('updatedAt', 'desc').limit(100).onSnapshot(function (snap) {
+        replies = snap.docs.map(function (d) { return d.data() || {}; });
+        renderOwner();
+      }, function () { subFailed = true; replies = []; renderOwner(); });
+    } catch (e) { subFailed = true; replies = []; renderOwner(); }
+  }
+
+  function renderOwner() {
+    var box = $('ownerView');
+    if (box.hidden) return;
+    clear(box);
+    var head = [
+      el('p', { class: 'eyebrow', text: 'Видишь только ты' }),
+      el('h1', { tabindex: '-1', text: 'Ответы' })
+    ];
+    head.forEach(function (n) { box.appendChild(n); });
+
+    var msg = null;
+    if (!db || subFailed) msg = 'Хранилище недоступно. Если ответ не пришёл сюда, он придёт текстом в чат.';
+    else if (replies === null) msg = 'Загружаю…';
+    else if (!replies.length) msg = 'Пока никто не ответил.';
+    if (msg) box.appendChild(el('p', { class: 'sub', text: msg }));
+
+    var list = el('div', { class: 'replies' });
+    (replies || []).forEach(function (r) {
+      var a = (r && typeof r.a === 'object' && r.a) || {};
+      var when = '';
+      try { when = new Date(r.updatedAt).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); } catch (e) {}
+      var finalQ = QS[QS.length - 1];
+      var hdr = el('header', null, [el('time', { text: when })]);
+      hdr.appendChild(el('span', { class: 'tag' + (r.done ? ' hot' : ''), text: r.done ? 'Ответила' : 'Не дошла до конца' }));
+      if (r.who === 'owner') hdr.appendChild(el('span', { class: 'tag', text: 'Твой тест' }));
+      var dl = el('dl');
+      if (a.final) {
+        dl.appendChild(el('div', null, [el('dt', { text: finalQ.lbl }), el('dd', { class: 'final', text: optRu(finalQ, String(a.final)) })]));
+      }
+      QS.forEach(function (q) {
+        if (q.type === 'final') return;
+        var v = q.type === 'text' ? (typeof a[q.id] === 'string' ? a[q.id] : (q.id === 'together' && typeof r.text === 'string' ? r.text : '')) : (a[q.id] ? optRu(q, String(a[q.id])) : '');
+        if (!v) return;
+        dl.appendChild(el('div', null, [el('dt', { text: q.lbl }), el('dd', { text: v })]));
+      });
+      if (typeof r.note === 'string' && r.note) {
+        dl.appendChild(el('div', null, [el('dt', { text: 'Комментарий' }), el('dd', { text: r.note })]));
+      }
+      list.appendChild(el('article', { class: 'reply' }, [hdr, dl]));
+    });
+    box.appendChild(list);
+    box.appendChild(el('div', { class: 'nav' }, [
+      el('a', { class: 'btn line', href: '#home', style: 'text-decoration:none;text-align:center;flex:1;display:flex;align-items:center;justify-content:center', text: 'К вопросам' })
+    ]));
+  }
+
+  function route() {
+    var showOwner = owner && location.hash === '#answers';
+    $('ownerView').hidden = !showOwner;
+    $('card').hidden = showOwner;
+    $('bar').hidden = showOwner;
+    $('ownerLink').hidden = !owner || showOwner;
+    if (showOwner) {
+      subscribeReplies();
+      renderOwner();
+      var h = $('ownerView').querySelector('h1'); if (h) h.focus();
+    }
+  }
+
+  /* ---------- start ---------- */
+  $('lang-ru').addEventListener('click', function () { S.lang = 'ru'; render(false); });
+  $('lang-zh').addEventListener('click', function () { S.lang = 'zh'; render(false); });
+  window.addEventListener('hashchange', route);
+  render(false);
+  route();
+
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('db').then(function (d) { db = d; route(); }).catch(function () {});
+    window.claude.use('user').then(function (u) {
+      if (!u) return;
+      return u.isOwner().then(function (o) { owner = !!o; route(); });
+    }).catch(function () {});
+  }
+})();
+</script>
+
+<script>
+(function () {
+  var c = document.getElementById('petals');
+  if (!c || !c.getContext) return;
+  var ctx = c.getContext('2d');
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var W = 0, H = 0, P = [], last = 0;
+  var COLORS = ['#FF8FA3', '#FFB3C1', '#FFC9D3', '#F870A0'];
+
+  function size() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var n = Math.max(14, Math.min(30, Math.round(W / 24)));
+    while (P.length < n) P.push(make(true));
+    P.length = n;
+  }
+  function make(anywhere) {
+    return {
+      x: Math.random() * W, y: anywhere ? Math.random() * H : -24,
+      s: 7 + Math.random() * 9, vy: 16 + Math.random() * 24, drift: Math.random() * Math.PI * 2,
+      amp: 12 + Math.random() * 22, r: Math.random() * Math.PI * 2, vr: -0.9 + Math.random() * 1.8,
+      a: 0.32 + Math.random() * 0.42, col: COLORS[(Math.random() * COLORS.length) | 0]
+    };
+  }
+  function draw(p) {
+    var s = p.s;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.r);
+    ctx.globalAlpha = p.a;
+    ctx.fillStyle = p.col;
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.bezierCurveTo(s * 0.95, -s * 0.7, s * 0.8, s * 0.65, 0, s);
+    ctx.bezierCurveTo(-s * 0.8, s * 0.65, -s * 0.95, -s * 0.7, 0, -s);
+    ctx.fill();
+    ctx.restore();
+  }
+  function frame(t) {
+    var dt = Math.min(0.05, (t - last) / 1000 || 0.016);
+    last = t;
+    ctx.clearRect(0, 0, W, H);
+    for (var i = 0; i < P.length; i++) {
+      var p = P[i];
+      p.y += p.vy * dt;
+      p.drift += dt * 0.9;
+      p.x += Math.sin(p.drift) * p.amp * dt;
+      p.r += p.vr * dt;
+      if (p.y > H + 24) P[i] = p = make(false);
+      draw(p);
+    }
+    requestAnimationFrame(frame);
+  }
+  size();
+  window.addEventListener('resize', function () { size(); if (reduce) paintOnce(); });
+  function paintOnce() { ctx.clearRect(0, 0, W, H); P.forEach(draw); }
+  if (reduce) paintOnce(); else requestAnimationFrame(frame);
+})();
+</script>
+</body></html>
